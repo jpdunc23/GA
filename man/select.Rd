@@ -2,20 +2,20 @@
 % Please edit documentation in R/select.R
 \name{select}
 \alias{select}
-\title{Add together two numbers.}
+\title{Identify the most important variables for prediction}
 \usage{
-select(x, y)
+select(X, y, num_iter = 100)
 }
 \arguments{
-\item{x}{A number.}
+\item{y}{A response vector.}
 
-\item{y}{A number.}
+\item{x}{An input matrix.}
 }
 \value{
-The sum of \code{x} and \code{y}.
+A list of the features of \code{X} that best describe \code{y}.
 }
 \description{
-Add together two numbers.
+Identify the most important variables for prediction
 }
 \examples{
 add(1, 1)

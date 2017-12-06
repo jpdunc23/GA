@@ -9,7 +9,7 @@
 X <- mtcars[-1] 
 y <- unlist(mtcars[1])
 index <-initialize_parents(10,20)$index
-AIC <- lapply(index, calculate_aic, X, y, error_func)
+AIC <- lapply(index, calculate_aic, X, y, AIC)
 model_AIC <- data.frame(sapply(list(index), `[`))
 colnames(model_AIC) <- c('Index')
 model_AIC$AIC <- unlist(AIC)

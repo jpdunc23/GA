@@ -9,7 +9,8 @@ initialize_parents <- function(feature_count, generation_count=2*feature_count) 
   ##
   ## Examples:
   ##  parents <- initialize_parents(10, generation_count = 10, number_features=4)
-  
+  library(assertive)
+  library(plyr)
   # Sanitize input, ensure everything is an integer
   feature_count <- as.integer(feature_count)
   generation_count <- as.integer(generation_count)
@@ -48,48 +49,6 @@ initialize_parents <- function(feature_count, generation_count=2*feature_count) 
   return (list("binary" = binary_list, "index" = index_list))
 }
 
-library(assertive)
-library(plyr)
-
-# initialize_parents <- function(feature_count, generation_count=100) {
-#   ## inputs:
-#   ##   feature_count        Number of features given
-#   ##   generation_count     Number of parents in the generation
-#   ##
-#   ## output: Object with indexes of what features to include
-#   ##  $binary    list of list of [0, 1] where 0 means don't include features and 1 means include feature
-#   ##  $index     list of lists of column indexes to include
-#   ##
-#   ## Examples:
-#   ##  parents <- initialize_parents(10, generation_count = 10)
-#   
-#   # Sanitize input, ensure everything is an integer
-#   feature_count <- as.integer(feature_count)
-#   generation_count <- as.integer(generation_count)
-#   
-#   # Ensure input is sanitized correctly
-#   is_integer(feature_count)
-#   is_integer(generation_count)
-#   
-#   # index_list (returns list of features that are included)
-#   # binary_list (returns 1 if feature is included, otherwise 0)
-#   index_list <- list()
-#   binary_list <- list()
-#   
-#   # creates all the parents in the generation
-#   for (generation in 1:generation_count) {
-#     
-#     # samples a fixed number of features from the total features
-#     indexes <- sort(sample(c(1:feature_count), size = sample(0:feature_count, 1)))
-#     index_list[[generation]] <- indexes
-#     
-#     binary_string <- rep(0, feature_count)
-#     binary_string[indexes] <- 1
-#     binary_list[[generation]] <- binary_string
-#   }
-#   
-#   return (list("binary" = binary_list, "index" = index_list))
-# }
 
 
 calculate_fitness <- function(index, X, y, error_func) {
@@ -103,7 +62,7 @@ calculate_fitness <- function(index, X, y, error_func) {
   ##
   ## Examples:
   ##  fitness <- calculate_fitness(data.frame(replicate(10,sample(0:1,1000,rep=TRUE))), 1:1000)
-  index.str <- deparse(index)
+  index.str <- paste0(deparse(index), collapse = "")
   if (index.str %in% names(dict.fitness)) {
     return(get(index.str, envir = dict.fitness))
   } else{
@@ -140,49 +99,45 @@ ranked_models <- function(index, X, y, error_func=AIC) {
   #' index <-initialize_parents(10,20)$index
   #' ranked_models(index, X, y)
   #' 
-  # fitness_ini <- lapply(index, calculate_fitness, X, y, AIC)
   fitness_ini <- lapply(index, calculate_fitness, X, y, error_func)
   model_fitness <- data.frame(sapply(list(index), `[`))
   colnames(model_fitness) <- c('Index')
   model_fitness$fitness <- unlist(fitness_ini)
   model_fitness <- arrange(model_fitness,fitness)
-  # model_fitness$rank <- min_rank(model_fitness$fitness_ini)
-  # model_fitness$fitness <- (2*model_fitness$rank)/(P*(P+1))
   
   return(model_fitness)
 }
 
 
 
-
-#' Breeding to create a new combination of predictors to use in
-#'   the regression, via genetic crossover and mutation by default.
-#'
-#' @param parents A tuple (2-list) of ordered numeric vectors,
-#'   representing the parents which will breed. Each parent is
-#'   represented by the indices of the genes which are active
-#'   in its chromosome, e.g. c(1, 4, 7) corresponds to using the
-#'   first, fourth, and seventh predictors in the regression.
-#' @param C The length of chromosomes, i.e. the maximum number of
-#'   possible predictors.
-#' @param n Number of crossover points, up to a maximum of C - 1.
-#' @param op An optional, user-specified genetic operator function
-#'   to carry out the breeding.
-#' @param ... Additional parameters to pass to the user-specific op
-#'   function.
-#' @return A tuple (2-list) of ordered numeric vector representing
-#'   the two offspring produced by the breeding as indices of the
-#'   genes (predictors) which are active in the chromosome (regression).
-#' @examples
-#' C <- 5 ## 5 genes / max number of predictors
-#' ## parent generation of size 3
-#' parent_gen <- list(list(c(1, 3), c(4)),
-#'                    list(c(2, 3), c(1,4)),
-#'                    list(c(3), c(1, 3, 4)))
-#' ## list of numeric vectors representing the next generation
-#' next_gen <- unlist(lapply(parent_gen, breed, C), FALSE, FALSE)
 breed <- function(parents, C, n = 1, op = NULL, ...) {
-  if (n >= C - 1) {
+  #' Breeding to create a new combination of predictors to use in
+  #'   the regression, via genetic crossover and mutation by default.
+  #'
+  #' @param parents A tuple (2-list) of ordered numeric vectors,
+  #'   representing the parents which will breed. Each parent is
+  #'   represented by the indices of the genes which are active
+  #'   in its chromosome, e.g. c(1, 4, 7) corresponds to using the
+  #'   first, fourth, and seventh predictors in the regression.
+  #' @param C The length of chromosomes, i.e. the maximum number of
+  #'   possible predictors.
+  #' @param n Number of crossover points, up to a maximum of C - 1.
+  #' @param op An optional, user-specified genetic operator function
+  #'   to carry out the breeding.
+  #' @param ... Additional parameters to pass to the user-specific op
+  #'   function.
+  #' @return A tuple (2-list) of ordered numeric vector representing
+  #'   the two offspring produced by the breeding as indices of the
+  #'   genes (predictors) which are active in the chromosome (regression).
+  #' @examples
+  #' C <- 5 ## 5 genes / max number of predictors
+  #' ## parent generation of size 3
+  #' parent_gen <- list(list(c(1, 3), c(4)),
+  #'                    list(c(2, 3), c(1,4)),
+  #'                    list(c(3), c(1, 3, 4)))
+  #' ## list of numeric vectors representing the next generation
+  #' next_gen <- unlist(lapply(parent_gen, breed, C), FALSE, FALSE)
+    if (n >= C - 1) {
     msg <- paste0("Number of crossover points is greater than ",
                   "chromosome length. Using default number of ",
                   "crossover points (1) instead.")
@@ -250,12 +205,7 @@ crossover <- function(splits, parent1, parent2) {
 }
 
 tournament <- function(models, k){
-  # best = null
-  # for i=1 to k
-  # ind = pop[random(1, N)]
-  # if (best == null) or fitness(ind) > fitness(best)
-  # best = ind
-  # return best
+
   num_offspring <- nrow(models)/2
   M <- t(matrix(rep(1:nrow(models)),nrow=nrow(models), ncol = nrow(models)))
   sample <- t(apply(M, 1, function(x) sample.int(length(x), size = k, replace = FALSE)))
@@ -311,7 +261,6 @@ propotional <- function(models,random = TRUE){
   return(parents)
 }
 
-library(dplyr)
 #' Replace the worst-performing offsprings with their best-performing parents.
 #' The function will automatically compare the G worst-performing offsprings with the G best-performing parents. Suppose among them, k parents outperform k offsprings; the parents will then replace the k offsprings.
 #' 
@@ -323,6 +272,7 @@ library(dplyr)
 #' generation_gap(old_df, new_df, 10)
 
 generation_gap <- function(old_gen, new_gen, G=nrow(new_gen)) {
+  require(dplyr)
   new.fitness <- na.omit(new_gen$fitness[nrow(new_gen)-G+1:nrow(new_gen)])
   old_gen <- arrange(old_gen, desc(fitness))
   old.fitness <- na.omit(old_gen$fitness[nrow(old_gen)-G+1:nrow(old_gen)])
@@ -332,13 +282,14 @@ generation_gap <- function(old_gen, new_gen, G=nrow(new_gen)) {
   return(new_gen)
 }
 
-select <- function(X, y, C = ncol(X), randomness = TRUE, generation_count=2 * ncol(X), G = 1){
+select <- function(X, y, selection, C = ncol(X), randomness = TRUE, K=2, generation_count=2 * ncol(X), G = 1){
   #' Ranked each model by its fitness,
   #' Choose parents from generations propotional to their fitness
   #' Do crossover and mutation
   #' Replace k worst old individuals by best k new individuals
   #' @param X: dataframe containing vairables in the model
   #' @param y: vector targeted variable
+  #' @param selection: selection mechanism. Can be either "proportional" or "tournament".
   #' @param C: number of random point when crossover
   #' @param randomness: if TURE, one parent will be selected randomly
   #' @param generation_count: number of generations to initialize
@@ -358,10 +309,11 @@ select <- function(X, y, C = ncol(X), randomness = TRUE, generation_count=2 * nc
   while(identical(fitness,rep(fitness[1],length(fitness)))==FALSE){
     #print(old_gen)
     ##### select parents #####
-    
-    parents <- tournament(old_gen, k=8)
-    # parents <- propotional(old_gen, random = randomness)
-    
+    if (selection == "proportional"){
+      parents <- propotional(old_gen, random = randomness)
+    } else {
+      parents <- tournament(old_gen, k=K)
+    }
     
     ##### crossover and mutation #####
     

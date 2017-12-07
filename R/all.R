@@ -304,8 +304,8 @@ select <- function(X, y, C = ncol(X), randomness = TRUE, generation_count=2 * nc
   #' @param C: number of random point when crossover
   #' @param randomness: if TURE, one parent will be selected randomly
   #' @param generation_count: number of generations to initialize
-  #' @param G: number of worst-performing paretns the user wishes to replace by best parents 
-  #' @return The converged generation.
+  #' @param G: number of worst-performing paretns the user wishes to replace by best offsprings 
+  #' @return The converged generation
   #' @examples
   #' x <- mtcars[-1]
   #' y <- unlist(mtcars[1])

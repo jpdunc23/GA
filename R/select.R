@@ -1,29 +1,34 @@
-select <- function(X, y, randomness = TRUE, generation_count=2 * ncol(X), error_func=AIC, k){
+select <- function(X, y, C = ncol(X), randomness = TRUE, generation_count=2 * ncol(X), G = 1){
   #' Ranked each model by its AIC,
   #' Choose parents from generations propotional to their fitness
   #' Do crossover and mutation
   #' Replace k worst old individuals by best k new individuals
-  #' @param old_gen: dataframe with index and AIC
   #' @param X: dataframe containing vairables in the model
   #' @param y: vector targeted variable
-  #' @param random: if TURE, one parent will be selected randomly
-  #' @return The selected parents(list of n lists, each list contains two parents)
+  #' @param C: number of random point when crossover
+  #' @param randomness: if TURE, one parent will be selected randomly
+  #' @param generation_count: number of generations to initialize
+  #' @param G: number of worst-performing paretns the user wishes to replace by best parents 
+  #' @return The converged generation.
   #' @examples
   #' x <- mtcars[-1]
   #' y <- unlist(mtcars[1])
-  #' next_gen <- select(X, y, randomness=TRUE, k=5, generation_count=100, error_func=BIC)
-
-  parents <- initialize_parents(ncol(X), generation_count=generation_count)
-  old_gen <- ranked_models(parents, X, y)
-
-  while (nrow(next_gen) > 1) {
+  #' finial_gen <- select(x, y, randomness=TRUE, G=2)
+  
+  feature_count <- ncol(X)
+  initial <- initialize_parents(ncol(X), generation_count=generation_count)
+  old_gen <- ranked_models(initial$index, X, y)
+  AIC <- old_gen$AIC
+  i <- 0   # number of iterations
+  while(identical(AIC,rep(AIC[1],length(AIC)))==FALSE){
+    #print(old_gen)
     ##### select parents #####
 
     parents <- propotional(old_gen, random = randomness)
 
     ##### crossover and mutation #####
 
-    children <- lapply(parents, breed, p=length(x))
+    children <- unlist(lapply(parents, breed, C),FALSE, FALSE)
 
     ##### ranked new generation and calculate AIC #####
 
@@ -31,7 +36,15 @@ select <- function(X, y, randomness = TRUE, generation_count=2 * ncol(X), error_
 
     ##### replace k worst old individuals with k new individuals #####
 
-    next_gen <- generation_gap(ranked_new, old_gen, k)
+    next_gen <- generation_gap(ranked_new, old_gen,G)
+    
+    ##### let new genration reproudce next offspring ######
+    old_gen <- next_gen
+    AIC <- old_gen$AIC
+    i <- i + 1
   }
-  return(next_gen)
+  summary <- list(final_gen = old_gen$Index[[1]],AIC = AIC[[1]],num_iteration = i)
+  return(summary)
 }
+
+

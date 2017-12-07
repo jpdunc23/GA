@@ -5,17 +5,6 @@
 # So for this moment, I got rid of the "error_func" argument and replaced 
 #   error_func(model) with AIC(model).
 # Hopefully we can fix the bug together.
-
-X <- mtcars[-1] 
-y <- unlist(mtcars[1])
-index <-initialize_parents(10,20)$index
-AIC <- lapply(index, calculate_aic, X, y, AIC)
-model_AIC <- data.frame(sapply(list(index), `[`))
-colnames(model_AIC) <- c('Index')
-model_AIC$AIC <- unlist(AIC)
-model_AIC <- arrange(model_AIC,AIC)
-
-ranked_models(index, X, y)
 #################################################################################
 
 
@@ -62,7 +51,7 @@ initialize_parents <- function(feature_count, generation_count=100) {
   return (list("binary" = binary_list, "index" = index_list))
 }
 
-calculate_aic <- function(index, X, y, error_func) {
+calculate_aic <- function(index, X, y) {
   ## inputs:
   ##   X               Data frame of selected features
   ##   y               Output variable
@@ -86,25 +75,25 @@ calculate_aic <- function(index, X, y, error_func) {
   X$y <- y
   
   model <- lm(y ~ ., data = X)
-  return (error_func(model)) 
+  return (AIC(model)) 
 }
 
-ranked_models <- function(index, X, y, error_func=AIC) {
-  #' Fit the models and rank them by their fitness function.
-  #'
-  #' @param index A list of indices of selected variables. 
-  #' @param X Data frame of all features
-  #' @param y Dependent variable
-  #' @param error_func Error function for fitness measurement. Default is AIC.
-  #' @return a data frame containing index list and their respective AIC, sorted by AIC in ascending order
-  #' @examples
-  #' X <- mtcars[-1] 
-  #' y <- unlist(mtcars[1])
-  #' index <-initialize_parents(10,20)$index
-  #' ranked_models(index, X, y)
-  #' 
+ranked_models <- function(index, X, y) {
+  ## inputs:
+  ##   chromosome      Output of initialize_parents()
+  ##   X               Data frame of all features
+  ##   y               Output variable
+  ##
+  ## output: a data frame containing binary list, index list and their
+  ##          respective AIC, sorted by AIC in ascending order
+  ## 
+  ## The smaller the AIC, the better the fit.
+  ## 
+  ## Examples:
+  ##  chromosome <- initialize_parents(5)
+  ##  ranked_models(chromosome, df, y)
 
-  AIC <- lapply(index, calculate_aic, X, y, error_func)
+  AIC <- lapply(index, calculate_aic, X, y)
   model_AIC <- data.frame(sapply(list(index), `[`))
   colnames(model_AIC) <- c('Index')
   model_AIC$AIC <- unlist(AIC)

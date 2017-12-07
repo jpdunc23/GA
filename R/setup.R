@@ -1,4 +1,4 @@
-initialize_parents <- function(feature_count, generation_count=100) {
+initialize_parents <- function(feature_count, generation_count=2*feature_count) {
   ## inputs:
   ##   feature_count        Number of features given
   ##   generation_count     Number of parents in the generation
@@ -28,17 +28,21 @@ initialize_parents <- function(feature_count, generation_count=100) {
   binary_list <- list()
 
   # creates all the parents in the generation
-  for (generation in 1:generation_count) {
+  while (length(index_list) < generation_count) {
 
     # samples a fixed number of features from the total features
     indexes <- sort(sample(c(1:feature_count), size = sample(0:feature_count, 1)))
-    index_list[[generation]] <- indexes
+    index_length <- length(index_list)
+    index_list[[index_length + 1]] <- indexes
 
     binary_string <- rep(0, feature_count)
     binary_string[indexes] <- 1
-    binary_list[[generation]] <- binary_string
+    binary_length <- length(binary_list)
+    binary_list[[binary_length + 1]] <- binary_string
 
     # Check for duplicates!
+    index_list <- unique(index_list)
+    binary_list <- unique(binary_list)
   }
 
   return (list("binary" = binary_list, "index" = index_list))

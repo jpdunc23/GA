@@ -11,17 +11,17 @@ calculate_error <- function(X, y, error_func=AIC) {
   ##
   ## Examples:
   ##  aic <- calculate_aic(data.frame(replicate(10,sample(0:1,1000,rep=TRUE))), 1:1000)
-
+  
   X <- as.data.frame(X)
   y <- as.vector(y)
-
+  
   is_data.frame(X)
   is_vector(y)
-
+  
   stopifnot(nrow(X) == length(y))
-
+  
   X$y <- y
-
+  
   model <- lm(y ~ ., data = X)
   return (error_func(model))
 }

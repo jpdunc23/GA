@@ -51,45 +51,45 @@ initialize_parents <- function(feature_count, generation_count=2*feature_count) 
 library(assertive)
 library(plyr)
 
-initialize_parents <- function(feature_count, generation_count=100) {
-  ## inputs:
-  ##   feature_count        Number of features given
-  ##   generation_count     Number of parents in the generation
-  ##
-  ## output: Object with indexes of what features to include
-  ##  $binary    list of list of [0, 1] where 0 means don't include features and 1 means include feature
-  ##  $index     list of lists of column indexes to include
-  ##
-  ## Examples:
-  ##  parents <- initialize_parents(10, generation_count = 10)
-  
-  # Sanitize input, ensure everything is an integer
-  feature_count <- as.integer(feature_count)
-  generation_count <- as.integer(generation_count)
-  
-  # Ensure input is sanitized correctly
-  is_integer(feature_count)
-  is_integer(generation_count)
-  
-  # index_list (returns list of features that are included)
-  # binary_list (returns 1 if feature is included, otherwise 0)
-  index_list <- list()
-  binary_list <- list()
-  
-  # creates all the parents in the generation
-  for (generation in 1:generation_count) {
-    
-    # samples a fixed number of features from the total features
-    indexes <- sort(sample(c(1:feature_count), size = sample(0:feature_count, 1)))
-    index_list[[generation]] <- indexes
-    
-    binary_string <- rep(0, feature_count)
-    binary_string[indexes] <- 1
-    binary_list[[generation]] <- binary_string
-  }
-  
-  return (list("binary" = binary_list, "index" = index_list))
-}
+# initialize_parents <- function(feature_count, generation_count=100) {
+#   ## inputs:
+#   ##   feature_count        Number of features given
+#   ##   generation_count     Number of parents in the generation
+#   ##
+#   ## output: Object with indexes of what features to include
+#   ##  $binary    list of list of [0, 1] where 0 means don't include features and 1 means include feature
+#   ##  $index     list of lists of column indexes to include
+#   ##
+#   ## Examples:
+#   ##  parents <- initialize_parents(10, generation_count = 10)
+#   
+#   # Sanitize input, ensure everything is an integer
+#   feature_count <- as.integer(feature_count)
+#   generation_count <- as.integer(generation_count)
+#   
+#   # Ensure input is sanitized correctly
+#   is_integer(feature_count)
+#   is_integer(generation_count)
+#   
+#   # index_list (returns list of features that are included)
+#   # binary_list (returns 1 if feature is included, otherwise 0)
+#   index_list <- list()
+#   binary_list <- list()
+#   
+#   # creates all the parents in the generation
+#   for (generation in 1:generation_count) {
+#     
+#     # samples a fixed number of features from the total features
+#     indexes <- sort(sample(c(1:feature_count), size = sample(0:feature_count, 1)))
+#     index_list[[generation]] <- indexes
+#     
+#     binary_string <- rep(0, feature_count)
+#     binary_string[indexes] <- 1
+#     binary_list[[generation]] <- binary_string
+#   }
+#   
+#   return (list("binary" = binary_list, "index" = index_list))
+# }
 
 
 calculate_fitness <- function(index, X, y, error_func) {
@@ -103,7 +103,7 @@ calculate_fitness <- function(index, X, y, error_func) {
   ##
   ## Examples:
   ##  fitness <- calculate_fitness(data.frame(replicate(10,sample(0:1,1000,rep=TRUE))), 1:1000)
-  index.str <- paste0(deparse(index), collapse = "")
+  index.str <- deparse(index)
   if (index.str %in% names(dict.fitness)) {
     return(get(index.str, envir = dict.fitness))
   } else{
@@ -140,12 +140,15 @@ ranked_models <- function(index, X, y, error_func=AIC) {
   #' index <-initialize_parents(10,20)$index
   #' ranked_models(index, X, y)
   #' 
-  
-  fitness <- lapply(index, calculate_fitness, X, y, error_func)
+  # fitness_ini <- lapply(index, calculate_fitness, X, y, AIC)
+  fitness_ini <- lapply(index, calculate_fitness, X, y, error_func)
   model_fitness <- data.frame(sapply(list(index), `[`))
   colnames(model_fitness) <- c('Index')
-  model_fitness$fitness <- unlist(fitness)
+  model_fitness$fitness <- unlist(fitness_ini)
   model_fitness <- arrange(model_fitness,fitness)
+  # model_fitness$rank <- min_rank(model_fitness$fitness_ini)
+  # model_fitness$fitness <- (2*model_fitness$rank)/(P*(P+1))
+  
   return(model_fitness)
 }
 
@@ -246,6 +249,30 @@ crossover <- function(splits, parent1, parent2) {
   }), FALSE, FALSE)
 }
 
+tournament <- function(models, k){
+  # best = null
+  # for i=1 to k
+  # ind = pop[random(1, N)]
+  # if (best == null) or fitness(ind) > fitness(best)
+  # best = ind
+  # return best
+  num_offspring <- nrow(models)/2
+  M <- t(matrix(rep(1:nrow(models)),nrow=nrow(models), ncol = nrow(models)))
+  sample <- t(apply(M, 1, function(x) sample.int(length(x), size = k, replace = FALSE)))
+  ind <- apply(sample, 1, function(x) return(which.min(models$fitness[x])))
+  ind <- cbind(sample, ind)
+  parent_ind <- apply(ind, 1, function(x) return(x[x[k+1]]))
+  split_index <- sample(parent_ind, num_offspring, replace=FALSE)
+  father <- models$Index[split_index]
+  mother <- models$Index[-split_index]
+  parents <- list()
+  for(i in 1:num_offspring){
+    parents[[i]] <- list(father[[i]],mother[[i]])
+  }
+  return(parents)
+  
+}
+
 propotional <- function(models,random = TRUE){
   #' Choose parents from generations propotional to their fitness
   #' @param models: dataframe with indexes and fitness
@@ -323,7 +350,7 @@ select <- function(X, y, C = ncol(X), randomness = TRUE, generation_count=2 * nc
   #' select(x, y, randomness=TRUE, G=2)
   
   feature_count <- ncol(X)
-  dict.fitness <- new.env()
+  dict.fitness <<- new.env()
   initial <- initialize_parents(ncol(X), generation_count=generation_count)
   old_gen <- ranked_models(initial$index, X, y)
   fitness <- old_gen$fitness
@@ -332,7 +359,9 @@ select <- function(X, y, C = ncol(X), randomness = TRUE, generation_count=2 * nc
     #print(old_gen)
     ##### select parents #####
     
-    parents <- propotional(old_gen, random = randomness)
+    parents <- tournament(old_gen, k=8)
+    # parents <- propotional(old_gen, random = randomness)
+    
     
     ##### crossover and mutation #####
     

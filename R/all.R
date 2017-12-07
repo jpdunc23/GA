@@ -51,7 +51,7 @@ initialize_parents <- function(feature_count, generation_count=2*feature_count) 
 
 
 
-calculate_fitness <- function(index, X, y, error_func) {
+calculate_fitness <- function(index, X, y, error_func, family = gaussian) {
   ## inputs:
   ##   X               Data frame of selected features
   ##   y               Output variable
@@ -77,7 +77,7 @@ calculate_fitness <- function(index, X, y, error_func) {
     
     X$y <- y
     
-    model <- lm(y ~ ., data = X)
+    model <- glm(y ~ ., data = X,family = family)
     fitness <- error_func(model)
     assign(index.str, fitness, envir = dict.fitness)
     return (fitness) 
@@ -85,13 +85,14 @@ calculate_fitness <- function(index, X, y, error_func) {
   
 }
 
-ranked_models <- function(index, X, y, error_func=AIC) {
+ranked_models <- function(index, X, y, error_func=AIC, family = gaussian) {
   #' Fit the models and rank them by their fitness function.
   #'
   #' @param index A list of indices of selected variables. 
   #' @param X Data frame of all features
   #' @param y Dependent variable
   #' @param error_func Error function for fitness measurement. Default is AIC.
+  #' @param family A description of the error distribution and link function to be used in glm.
   #' @return a data frame containing index list and their respective AIC, sorted by AIC in ascending order
   #' @examples
   #' X <- mtcars[-1] 
@@ -99,7 +100,7 @@ ranked_models <- function(index, X, y, error_func=AIC) {
   #' index <-initialize_parents(10,20)$index
   #' ranked_models(index, X, y)
   #' 
-  fitness_ini <- lapply(index, calculate_fitness, X, y, error_func)
+  fitness_ini <- lapply(index, calculate_fitness, X, y, error_func, family)
   model_fitness <- data.frame(sapply(list(index), `[`))
   colnames(model_fitness) <- c('Index')
   model_fitness$fitness <- unlist(fitness_ini)
@@ -282,7 +283,7 @@ generation_gap <- function(old_gen, new_gen, G=nrow(new_gen)) {
   return(new_gen)
 }
 
-select <- function(X, y, selection, C = ncol(X), randomness = TRUE, K=2, generation_count=2 * ncol(X), G = 1){
+select <- function(X, y, C = ncol(X), family = gaussian, selection = "tournament", K = 2, randomness = TRUE, generation_count=2 * ncol(X), G = 1, loss = AIC){
   #' Ranked each model by its fitness,
   #' Choose parents from generations propotional to their fitness
   #' Do crossover and mutation
@@ -290,20 +291,23 @@ select <- function(X, y, selection, C = ncol(X), randomness = TRUE, K=2, generat
   #' @param X: dataframe containing vairables in the model
   #' @param y: vector targeted variable
   #' @param selection: selection mechanism. Can be either "proportional" or "tournament".
+  #' @param K: the number of partitions when use tournament selecting parents
   #' @param C: number of random point when crossover
+  #' @param family: a description of the error distribution and link function to be used in gm.
   #' @param randomness: if TURE, one parent will be selected randomly
   #' @param generation_count: number of generations to initialize
   #' @param G: number of worst-performing paretns the user wishes to replace by best offspring 
+  #' @param loss: loss function to evaluate AIC
   #' @return The converged generation.
   #' @examples
   #' x <- mtcars[-1]
   #' y <- unlist(mtcars[1])
-  #' select(x, y, randomness=TRUE, G=2)
+  #' select(x, y, selection = "tournament",K = 5, randomness=TRUE, G=2)
   
   feature_count <- ncol(X)
   dict.fitness <<- new.env()
   initial <- initialize_parents(ncol(X), generation_count=generation_count)
-  old_gen <- ranked_models(initial$index, X, y)
+  old_gen <- ranked_models(initial$index, X, y, loss)
   fitness <- old_gen$fitness
   i <- 0   # number of iterations
   while(identical(fitness,rep(fitness[1],length(fitness)))==FALSE){
@@ -321,11 +325,11 @@ select <- function(X, y, selection, C = ncol(X), randomness = TRUE, K=2, generat
     
     ##### ranked new generation and calculate fitness #####
     
-    ranked_new <- ranked_models(children, X, y)
+    ranked_new <- ranked_models(children, X, y, loss)
     
     ##### replace k worst old individuals with k new individuals #####
     
-    next_gen <- generation_gap(ranked_new, old_gen,G)
+    next_gen <- generation_gap(ranked_new, old_gen, G)
     
     ##### let new genration reproudce next offspring ######
     old_gen <- next_gen

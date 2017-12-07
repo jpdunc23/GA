@@ -1,4 +1,4 @@
-select <- function(X, y, randomness = TRUE, generation_count=2 * ncol(X), error_func=AIC, k){
+select <- function(X, y, randomness = TRUE, generation_count=2 * ncol(X), k = generation_count){
   #' Ranked each model by its AIC,
   #' Choose parents from generations propotional to their fitness
   #' Do crossover and mutation
@@ -16,14 +16,15 @@ select <- function(X, y, randomness = TRUE, generation_count=2 * ncol(X), error_
   parents <- initialize_parents(ncol(X), generation_count=generation_count)
   old_gen <- ranked_models(parents, X, y)
 
-  while (nrow(next_gen) > 1) {
+  while (nrow(old_gen) > 1) {
     ##### select parents #####
 
     parents <- propotional(old_gen, random = randomness)
 
     ##### crossover and mutation #####
 
-    children <- lapply(parents, breed, p=length(x))
+    children <- unlist(lapply(parents, breed, ncol(X)),
+                       FALSE, FALSE)
 
     ##### ranked new generation and calculate AIC #####
 
@@ -32,6 +33,7 @@ select <- function(X, y, randomness = TRUE, generation_count=2 * ncol(X), error_
     ##### replace k worst old individuals with k new individuals #####
 
     next_gen <- generation_gap(ranked_new, old_gen, k)
+    old_gen <- next_gen
   }
   return(next_gen)
 }

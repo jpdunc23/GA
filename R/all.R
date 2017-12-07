@@ -91,7 +91,8 @@ initialize_parents <- function(feature_count, generation_count=100) {
   return (list("binary" = binary_list, "index" = index_list))
 }
 
-calculate_aic <- function(index, X, y) {
+
+calculate_fitness <- function(index, X, y, error_func) {
   ## inputs:
   ##   X               Data frame of selected features
   ##   y               Output variable
@@ -101,45 +102,55 @@ calculate_aic <- function(index, X, y) {
   ##  A numeric which determines the fit of the model
   ##
   ## Examples:
-  ##  aic <- calculate_aic(data.frame(replicate(10,sample(0:1,1000,rep=TRUE))), 1:1000)
+  ##  fitness <- calculate_fitness(data.frame(replicate(10,sample(0:1,1000,rep=TRUE))), 1:1000)
+  index.str <- deparse(index)
+  if (index.str %in% names(dict.fitness)) {
+    return(get(index.str, envir = dict.fitness))
+  } else{
+    X <- X[,index]
+    X <- as.data.frame(X)
+    y <- as.vector(y)
+    
+    is_data.frame(X)
+    is_vector(y)
+    
+    stopifnot(nrow(X) == length(y))
+    
+    X$y <- y
+    
+    model <- lm(y ~ ., data = X)
+    fitness <- error_func(model)
+    assign(index.str, fitness, envir = dict.fitness)
+    return (fitness) 
+  }
   
-  X <- X[,index]
-  X <- as.data.frame(X)
-  y <- as.vector(y)
-  
-  is_data.frame(X)
-  is_vector(y)
-  
-  stopifnot(nrow(X) == length(y))
-  
-  X$y <- y
-  
-  model <- lm(y ~ ., data = X)
-  return (AIC(model)) 
 }
 
-ranked_models <- function(index, X, y) {
-  ## inputs:
-  ##   chromosome      Output of initialize_parents()
-  ##   X               Data frame of all features
-  ##   y               Output variable
-  ##
-  ## output: a data frame containing binary list, index list and their
-  ##          respective AIC, sorted by AIC in ascending order
-  ## 
-  ## The smaller the AIC, the better the fit.
-  ## 
-  ## Examples:
-  ##  chromosome <- initialize_parents(5)
-  ##  ranked_models(chromosome, df, y)
+ranked_models <- function(index, X, y, error_func=AIC) {
+  #' Fit the models and rank them by their fitness function.
+  #'
+  #' @param index A list of indices of selected variables. 
+  #' @param X Data frame of all features
+  #' @param y Dependent variable
+  #' @param error_func Error function for fitness measurement. Default is AIC.
+  #' @return a data frame containing index list and their respective AIC, sorted by AIC in ascending order
+  #' @examples
+  #' X <- mtcars[-1] 
+  #' y <- unlist(mtcars[1])
+  #' index <-initialize_parents(10,20)$index
+  #' ranked_models(index, X, y)
+  #' 
   
-  AIC <- lapply(index, calculate_aic, X, y)
-  model_AIC <- data.frame(sapply(list(index), `[`))
-  colnames(model_AIC) <- c('Index')
-  model_AIC$AIC <- unlist(AIC)
-  model_AIC <- arrange(model_AIC,AIC)
-  return(model_AIC)
+  fitness <- lapply(index, calculate_fitness, X, y, error_func)
+  model_fitness <- data.frame(sapply(list(index), `[`))
+  colnames(model_fitness) <- c('Index')
+  model_fitness$fitness <- unlist(fitness)
+  model_fitness <- arrange(model_fitness,fitness)
+  return(model_fitness)
 }
+
+
+
 
 #' Breeding to create a new combination of predictors to use in
 #'   the regression, via genetic crossover and mutation by default.
@@ -237,7 +248,7 @@ crossover <- function(splits, parent1, parent2) {
 
 propotional <- function(models,random = TRUE){
   #' Choose parents from generations propotional to their fitness
-  #' @param models: dataframe with indexes and AIC
+  #' @param models: dataframe with indexes and fitness
   #' @param random: if TURE, one parent will be selected randomly
   #' @return The selected parents(list of n lists, each list contains two parents)
   #' @examples
@@ -247,13 +258,13 @@ propotional <- function(models,random = TRUE){
   #' rankedmodels <- ranked_models(initial_index,x,y)
   #' propotional(rankedmodels,random = T)
   index <- models$index
-  AIC <- unlist(models$AIC)
+  fitness <- unlist(models$fitness)
   n <- nrow(models)
   num_offspring <- ceiling(n/2)
-  if(max(AIC)>0&&identical(AIC,rep(AIC[1],length(AIC)))==FALSE){
-    AIC <- AIC - max(AIC)
+  if(max(fitness)>0&&identical(fitness,rep(fitness[1],length(fitness)))==FALSE){
+    fitness <- fitness - max(fitness)
   }
-  weight <- AIC / sum(AIC)
+  weight <- fitness / sum(fitness)
   sample_weight <- round(weight * n * 100)
   sample <- c()
   sample<-rep(1:length(sample_weight),sample_weight)
@@ -285,17 +296,17 @@ library(dplyr)
 #' generation_gap(old_df, new_df, 10)
 
 generation_gap <- function(old_gen, new_gen, G=nrow(new_gen)) {
-  new.AIC <- na.omit(new_gen$AIC[nrow(new_gen)-G+1:nrow(new_gen)])
-  old_gen <- arrange(old_gen, desc(AIC))
-  old.AIC <- na.omit(old_gen$AIC[nrow(old_gen)-G+1:nrow(old_gen)])
-  G.adjusted <- G - which(new.AIC >= old.AIC)[1] + 1
+  new.fitness <- na.omit(new_gen$fitness[nrow(new_gen)-G+1:nrow(new_gen)])
+  old_gen <- arrange(old_gen, desc(fitness))
+  old.fitness <- na.omit(old_gen$fitness[nrow(old_gen)-G+1:nrow(old_gen)])
+  G.adjusted <- G - which(new.fitness >= old.fitness)[1] + 1
   new_gen[(nrow(new_gen)-G.adjusted+1):nrow(new_gen),] <- old_gen[(nrow(old_gen)-G.adjusted+1):nrow(old_gen),]
-  new_gen <- arrange(new_gen,AIC)
+  new_gen <- arrange(new_gen,fitness)
   return(new_gen)
 }
 
 select <- function(X, y, C = ncol(X), randomness = TRUE, generation_count=2 * ncol(X), G = 1){
-  #' Ranked each model by its AIC,
+  #' Ranked each model by its fitness,
   #' Choose parents from generations propotional to their fitness
   #' Do crossover and mutation
   #' Replace k worst old individuals by best k new individuals
@@ -304,19 +315,20 @@ select <- function(X, y, C = ncol(X), randomness = TRUE, generation_count=2 * nc
   #' @param C: number of random point when crossover
   #' @param randomness: if TURE, one parent will be selected randomly
   #' @param generation_count: number of generations to initialize
-  #' @param G: number of worst-performing paretns the user wishes to replace by best offsprings 
-  #' @return The converged generation
+  #' @param G: number of worst-performing paretns the user wishes to replace by best offspring 
+  #' @return The converged generation.
   #' @examples
   #' x <- mtcars[-1]
   #' y <- unlist(mtcars[1])
   #' select(x, y, randomness=TRUE, G=2)
   
   feature_count <- ncol(X)
+  dict.fitness <- new.env()
   initial <- initialize_parents(ncol(X), generation_count=generation_count)
   old_gen <- ranked_models(initial$index, X, y)
-  AIC <- old_gen$AIC
+  fitness <- old_gen$fitness
   i <- 0   # number of iterations
-  while(identical(AIC,rep(AIC[1],length(AIC)))==FALSE){
+  while(identical(fitness,rep(fitness[1],length(fitness)))==FALSE){
     #print(old_gen)
     ##### select parents #####
     
@@ -326,7 +338,7 @@ select <- function(X, y, C = ncol(X), randomness = TRUE, generation_count=2 * nc
     
     children <- unlist(lapply(parents, breed, C),FALSE, FALSE)
     
-    ##### ranked new generation and calculate AIC #####
+    ##### ranked new generation and calculate fitness #####
     
     ranked_new <- ranked_models(children, X, y)
     
@@ -336,9 +348,9 @@ select <- function(X, y, C = ncol(X), randomness = TRUE, generation_count=2 * nc
     
     ##### let new genration reproudce next offspring ######
     old_gen <- next_gen
-    AIC <- old_gen$AIC
+    fitness <- old_gen$fitness
     i <- i + 1
   }
-  summary <- list(final_gen = old_gen$Index[[1]],AIC = AIC[[1]],num_iteration = i)
+  summary <- list(final_gen = old_gen$Index[[1]],fitness = fitness[[1]],num_iteration = i)
   return(summary)
 }

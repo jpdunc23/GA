@@ -1,25 +1,25 @@
-initialize_parents <- function(feature_count, generation_count=2*feature_count) {
+initialize_parents <- function(feature_count, P=2*feature_count) {
   ## inputs:
   ##   feature_count        Number of features given
-  ##   generation_count     Number of parents in the generation
+  ##   P     Number of parents in the generation
   ##
   ## output: Object with indexes of what features to include
   ##  $binary    list of list of [0, 1] where 0 means don't include features and 1 means include feature
   ##  $index     list of lists of column indexes to include
   ##
   ## Examples:
-  ##  parents <- initialize_parents(10, generation_count = 10, number_features=4)
+  ##  parents <- initialize_parents(10, P = 10, number_features=4)
   library(assertive)
   library(plyr)
   # Sanitize input, ensure everything is an integer
   feature_count <- as.integer(feature_count)
-  generation_count <- as.integer(generation_count)
+  P <- as.integer(P)
   
   # Ensure input is sanitized correctly
   if (!is.integer(feature_count)) {
     stop("Feature count is not an integer")
   }
-  if (!is.integer(generation_count)) {
+  if (!is.integer(P)) {
     stop("Generation count is not an integer")
   }
   
@@ -29,7 +29,7 @@ initialize_parents <- function(feature_count, generation_count=2*feature_count) 
   binary_list <- list()
   
   # creates all the parents in the generation
-  while (length(index_list) < generation_count) {
+  while (length(index_list) < P) {
     
     # samples a fixed number of features from the total features
     indexes <- sort(sample(c(1:feature_count), size = sample(0:feature_count, 1)))
@@ -109,8 +109,6 @@ ranked_models <- function(index, X, y, error_func=AIC, family = gaussian) {
   return(model_fitness)
 }
 
-
-
 breed <- function(parents, C, n = 1, op = NULL, ...) {
   #' Breeding to create a new combination of predictors to use in
   #'   the regression, via genetic crossover and mutation by default.
@@ -138,7 +136,7 @@ breed <- function(parents, C, n = 1, op = NULL, ...) {
   #'                    list(c(3), c(1, 3, 4)))
   #' ## list of numeric vectors representing the next generation
   #' next_gen <- unlist(lapply(parent_gen, breed, C), FALSE, FALSE)
-    if (n >= C - 1) {
+  if (n >= C - 1) {
     msg <- paste0("Number of crossover points is greater than ",
                   "chromosome length. Using default number of ",
                   "crossover points (1) instead.")
@@ -182,7 +180,6 @@ breed <- function(parents, C, n = 1, op = NULL, ...) {
 crossover <- function(splits, parent1, parent2) {
   n <- length(splits)
   unlist(sapply(1:(n + 1), function(i) {
-    ##browser()
     if (i %% 2 == 1) {
       ## take genetic material from first parent
       if (i == 1) {
@@ -262,80 +259,163 @@ propotional <- function(models,random = TRUE){
   return(parents)
 }
 
-#' Replace the worst-performing offsprings with their best-performing parents.
-#' The function will automatically compare the G worst-performing offsprings with the G best-performing parents. Suppose among them, k parents outperform k offsprings; the parents will then replace the k offsprings.
+#' Replace a proportion G of the old generation with their offspring.
 #' 
-#' @param old_gen Output of ranked_models() of the previous generation. A data frame.
-#' @param new_gen Output of ranked_models() of the current generation. A data frame.
-#' @param G Number of worst-performing offsprings the user wishes to replace. The default is the obeservation number of new_gen.
-#' @return The updated new_gen.
-#' @examples
-#' generation_gap(old_df, new_df, 10)
+#' @param old_gen Output of ranked_models() of the previous generation.
+#'   A data frame.
+#' @param children Output of ranked_models() of the children of the
+#'   previous generation. A data frame.
+#' @param G Proportion of old_gen to replace with children.
+#' @return The next generation, in descending order of fitness
+#'   (most fit first). A data frame.
+generation_gap <- function(old_gen, children, G = 1) {
+    require(dplyr)
 
-generation_gap <- function(old_gen, new_gen, G=nrow(new_gen)) {
-  require(dplyr)
-  new.fitness <- na.omit(new_gen$fitness[nrow(new_gen)-G+1:nrow(new_gen)])
-  old_gen <- arrange(old_gen, desc(fitness))
-  old.fitness <- na.omit(old_gen$fitness[nrow(old_gen)-G+1:nrow(old_gen)])
-  G.adjusted <- G - which(new.fitness >= old.fitness)[1] + 1
-  new_gen[(nrow(new_gen)-G.adjusted+1):nrow(new_gen),] <- old_gen[(nrow(old_gen)-G.adjusted+1):nrow(old_gen),]
-  new_gen <- arrange(new_gen,fitness)
-  return(new_gen)
+    n_old <- nrow(old_gen)
+    ## tournament selection can result
+    ## in more children than parents
+    n_child <- min(nrow(children), n_old)
+
+    ## at least one of the old_gen must be replaced
+    n_remove <- max(floor(G * n_old), 1)
+    
+    ## how many to keep from the old generation
+    ## including any size gap between old gen and
+    ## children due to duplicates in the children
+    ## at most n_old - 1 should be kept
+    n_keep <- min(n_old - n_remove + (n_old - n_child),
+                  n_old - 1)
+
+    if (n_keep > 0) {
+        ## keep top n_keep from old_gen and fill
+        ## remaining space with best children
+        next_gen <- rbind(old_gen[1:n_keep, ],
+                          children[1:(n_old - n_keep), ])
+        uniq <- !duplicated(next_gen$Index)
+        next_gen <- next_gen[uniq, ]
+    } else {
+        next_gen <- children
+    }
+
+    n_next <- nrow(next_gen)
+    if (n_next < n_old) {
+        i <- n_keep + 1
+        while (i <= n_old && n_next < n_old) {
+            ## check if old_gen[i, ] is not already
+            ## in next_gen and if so, add it to next_gen
+            new = is.na(
+                Position(function(x) {
+                    identical(x, old_gen$Index[[i]])
+                }, next_gen$Index)
+            )
+            if (new) next_gen <- rbind(next_gen, old_gen[i, ])
+
+            ## update index and next_gen size
+            i <- i + 1            
+            n_next <- nrow(next_gen)
+        }
+    }
+
+    next_gen <- next_gen %>% arrange(fitness)
+    return(next_gen)
 }
 
-select <- function(X, y, C = ncol(X), family = gaussian, selection = "tournament", K = 2, randomness = TRUE, generation_count=2 * ncol(X), G = 1, loss = AIC){
+select <- function(X, y, C = ncol(X), family = gaussian,
+                   selection = "tournament", K = 2,
+                   randomness = TRUE, P = 2 * ncol(X),
+                   G = 1/P, n_splits = 2, op = NULL,
+                   loss = AIC, max_iter = 100, ...) {
   #' Ranked each model by its fitness,
   #' Choose parents from generations propotional to their fitness
   #' Do crossover and mutation
-  #' Replace k worst old individuals by best k new individuals
+  #' Replace a proportion G of the worst old individuals by best
+  #'   new individuals
   #' @param X: dataframe containing vairables in the model
   #' @param y: vector targeted variable
+  #' @param C The length of chromosomes, i.e. the maximum number of
+  #'   possible predictors.
+  #' @param family: a description of the error distribution and link function to be used in gm.
   #' @param selection: selection mechanism. Can be either "proportional" or "tournament".
   #' @param K: the number of partitions when use tournament selecting parents
-  #' @param C: number of random point when crossover
-  #' @param family: a description of the error distribution and link function to be used in gm.
   #' @param randomness: if TURE, one parent will be selected randomly
-  #' @param generation_count: number of generations to initialize
-  #' @param G: number of worst-performing paretns the user wishes to replace by best offspring 
+  #' @param P: population size
+  #' @param G: proportion of worst-performing parents the user wishes to replace by best offspring
+  #' @param n_splits: number of crossover points to use in breeding
+  #' @param op: An optional, user-specified genetic operator function
+  #'   to carry out the breeding.
   #' @param loss: loss function to evaluate AIC
-  #' @return The converged generation.
+  #' @param max_iter: how many iterations to run before stopping
+  #' @return The best individual seen over all iterations.
   #' @examples
   #' x <- mtcars[-1]
   #' y <- unlist(mtcars[1])
-  #' select(x, y, selection = "tournament",K = 5, randomness=TRUE, G=2)
-  
+  #' select(x, y, selection = "tournament",K = 5, randomness=TRUE, G=0.8)
   feature_count <- ncol(X)
   dict.fitness <<- new.env()
-  initial <- initialize_parents(ncol(X), generation_count=generation_count)
+  initial <- initialize_parents(ncol(X), P)
   old_gen <- ranked_models(initial$index, X, y, loss)
   fitness <- old_gen$fitness
+
+  best <- c() ## best seen so far
+  best_i <- 0 ## iteration when it was seen
+  best_fit <- Inf ## fitness of best so far
+
   i <- 0   # number of iterations
-  while(identical(fitness,rep(fitness[1],length(fitness)))==FALSE){
-    #print(old_gen)
+  while(i < max_iter) {
+
     ##### select parents #####
+
     if (selection == "proportional"){
       parents <- propotional(old_gen, random = randomness)
     } else {
       parents <- tournament(old_gen, k=K)
     }
-    
+
     ##### crossover and mutation #####
-    
-    children <- unlist(lapply(parents, breed, C),FALSE, FALSE)
-    
+
+    children <- unique(unlist(lapply(parents, breed, C, n_splits, op),
+                              FALSE, FALSE))
+
     ##### ranked new generation and calculate fitness #####
-    
+
     ranked_new <- ranked_models(children, X, y, loss)
-    
+
     ##### replace k worst old individuals with k new individuals #####
-    
-    next_gen <- generation_gap(ranked_new, old_gen, G)
-    
+
+    next_gen <- generation_gap(old_gen, ranked_new, G)
+
+    ## update our best so far if necessary
+    if (next_gen$fitness[1] < best_fit) {
+        best_fit <- next_gen$fitness[1]
+        best <- next_gen$Index[[1]]
+        best_i <- i + 1
+    }
+
     ##### let new genration reproudce next offspring ######
     old_gen <- next_gen
     fitness <- old_gen$fitness
     i <- i + 1
   }
-  summary <- list(final_gen = old_gen$Index[[1]],fitness = fitness[[1]],num_iteration = i)
+    
+  summary <- list(survivor = best, fitness = best_fit,
+                    num_iteration = i, first_seen = best_i)
   return(summary)
 }
+
+#### example
+set.seed(1)
+n <- 500
+C <- 40
+X <- matrix(rnorm(n * C), nrow = n)
+beta <- c(88, 0.1, 123, 4563, 1.23, 20)
+y <- X[ ,1:6] %*% beta
+colnames(X) <- c(paste("real", 1:6, sep = ""),
+                 paste("noi", 1:34, sep = ""))
+system.time(
+    o1 <- select(X, y, nsplits = 3, max_iter = 200)
+)
+o1
+system.time(
+    o2 <- select(X, y, selection = "proportional", n_splits = 3)
+)
+o2

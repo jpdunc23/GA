@@ -103,7 +103,7 @@ calculate_fitness <- function(index, X, y, error_func) {
   ##
   ## Examples:
   ##  fitness <- calculate_fitness(data.frame(replicate(10,sample(0:1,1000,rep=TRUE))), 1:1000)
-  index.str <- deparse(index)
+  index.str <- paste0(deparse(index), collapse = "")
   if (index.str %in% names(dict.fitness)) {
     return(get(index.str, envir = dict.fitness))
   } else{

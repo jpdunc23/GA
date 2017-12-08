@@ -19,19 +19,42 @@ calculate_fitness <- function(index, X, y, fit_func, family = gaussian) {
   if (index.str %in% names(dict.fitness)) {
     return(get(index.str, envir = dict.fitness))
   } else{
+    
     X <- X[,index]
     X <- as.data.frame(X)
     y <- as.vector(y)
     
-    is_data.frame(X)
-    is_vector(y)
+    if (!is.vector(index)) {
+      stop("index is not a vector")
+    }
     
-    stopifnot(nrow(X) == length(y))
+    if (!is.matrix(X) && !is.data.frame(X) ) {
+      stop("X is not a matrix or data frame")
+    }
+    
+    if (!is.vector(y)) {
+      stop("Y is not a vector")
+    }
+    
+    if (!is.function(fit_func)) {
+      stop("fit_func is not a function")
+    }
+    
+    if (!(nrow(X) == length(y))) {
+      stop("Number of rows for X and y aren't equal")
+    }
     
     X$y <- y
     
     model <- glm(y ~ ., data = X, family = family)
-    fitness <- fit_func(model)
+    fitness <- tryCatch({
+      fit_func(model)
+      }, error = function(e) {
+        stop("fit_func ran into an error")
+      })
+    if (!is.numeric(fitness)) {
+      stop("fit_func did not return a number")
+    }
     assign(index.str, fitness, envir = dict.fitness)
     return (fitness)
   }

@@ -1,0 +1,46 @@
+---
+title: 'STAT 243 Final Project: Genetic Algorithm  Documentation'
+author: "Kunal Desai, Fan Dong, James Duncan, Xin Shi"
+date: "December 6, 2017"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## How $\textit{select}$ Works
+(discuss our general approach here)
+
+## An Example
+
+To test the algorithm, we randomly generate a dataset of 40 predictors and 500 observations, in which 6 are real predictors (named $real_{1} \sim real_{6}$) and the rest are pure noise variables($noi_{1} \sim noi_{34}$). The response variable, $y$, is thus given by the equation (coefficients are picked randomly): 
+
+$y= \beta_{0}+\beta_{1} \times real_{1} + \beta_{2} \times real_{2} + \beta_{3} \times real_{3} + \beta_{4} \times real_{4} + \beta_{5} \times real_{5} + \beta_{6} \times real_{6}$
+
+Code for data simulation:
+```{r }
+n <- 500
+c <- 40
+X <- matrix(rnorm(n * c), nrow = n)
+beta <- c(88, 0.1, 123, 4563, 1.23, 20)
+y <- X[ ,1:6] %*% beta
+colnames(X) <- c(paste("real", 1:6, sep = ""),
+                     paste("noi", 1:34, sep = ""))
+
+```
+
+Ideally, our genetic algorithm will successfully select $real_{1} \sim real_{6}$ out of the 40 predictors. 
+
+## How the Team Works
+
+The project resides in Kunal's repository (Git Username: kunaljaydesai, Repo name: GA).
+
+The specific tasks completed by each group member is listed below:
+\begin{enumerate}
+ \Kunal
+ \Fan
+ Wrote ranked_model, generation_gap and wrote their respective tests. Modified and finalized calculated_fitness and wrote its respective tests. Wrote the \textit{An Example} section in this documentation.
+ \James
+ \Xin
+\end{enumerate}

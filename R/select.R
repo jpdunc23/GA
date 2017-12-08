@@ -1,73 +1,92 @@
-<<<<<<< HEAD
-select <- function(X, y, randomness = TRUE, generation_count=2 * ncol(X), k = generation_count){
-=======
-select <- function(X, y, C = ncol(X), randomness = TRUE, generation_count=2 * ncol(X), G = 1){
->>>>>>> c54231a17bbecbeb94098f61f6f2428b65d056d7
-  #' Ranked each model by its AIC,
-  #' Choose parents from generations propotional to their fitness
-  #' Do crossover and mutation
-  #' Replace k worst old individuals by best k new individuals
-  #' @param X: dataframe containing vairables in the model
-  #' @param y: vector targeted variable
-  #' @param C: number of random point when crossover
-  #' @param randomness: if TURE, one parent will be selected randomly
-  #' @param generation_count: number of generations to initialize
-  #' @param G: number of worst-performing paretns the user wishes to replace by best offsprings
-  #' @return The converged generation
-  #' @examples
-  #' x <- mtcars[-1]
-  #' y <- unlist(mtcars[1])
-<<<<<<< HEAD
-  #' next_gen <- select(X, y, randomness=TRUE, k=5, generation_count=100, error_func=BIC)
+###########################################################################################
+# Function: select
+#
+#' Ranked each model by its fitness,
+#' Choose parents from generations propotional to their fitness
+#' Do crossover and mutation
+#' Replace a proportion G of the worst old individuals by best
+#'   new individuals
+#' @param X: dataframe containing vairables in the model
+#' @param y: vector targeted variable
+#' @param C The length of chromosomes, i.e. the maximum number of
+#'   possible predictors.
+#' @param family: a description of the error distribution and link function to be used in gm.
+#' @param selection: selection mechanism. Can be either "proportional" or "tournament".
+#' @param K: size of each round of selection when using tournament selection.
+#'   Must be an integer smaller than generation size.
+#' @param randomness: if TURE, one parent will be selected randomly
+#' @param P: population size
+#' @param G: proportion of worst-performing parents the user wishes to replace by best offspring
+#' @param n_splits: number of crossover points to use in breeding
+#' @param op: An optional, user-specified genetic operator function
+#'   to carry out the breeding.
+#' @param fit_func: Function for fitness measurement. Default is AIC.
+#' @param max_iter: how many iterations to run before stopping
+#' @return The best individual seen over all iterations.
+#' @examples
+#' x <- mtcars[-1]
+#' y <- unlist(mtcars[1])
+#' select(x, y, selection = "tournament", K = 5, randomness=TRUE, G=0.8)
+#' @export
 
-  parents <- initialize_parents(ncol(X), generation_count=generation_count)
-  old_gen <- ranked_models(parents, X, y)
-
-  while (nrow(old_gen) > 1) {
-=======
-  #' finial_gen <- select(x, y, randomness=TRUE, G=2)
+select <- function(X, y, C = ncol(X), family = gaussian,
+                   selection = "tournament", K = 2,
+                   randomness = TRUE, P = 2 * ncol(X),
+                   G = 1/P, n_splits = 2, op = NULL,
+                   fit_func = AIC, max_iter = 100, ...) {
+  library(plyr)
+  library(dplyr)
+  library(assertive)
+  
   
   feature_count <- ncol(X)
-  initial <- initialize_parents(ncol(X), generation_count=generation_count)
-  old_gen <- ranked_models(initial$index, X, y)
-  AIC <- old_gen$AIC
+  dict.fitness <<- new.env()
+  initial <- initialize_parents(ncol(X), P)
+  old_gen <- ranked_models(initial$index, X, y, fit_func)
+  fitness <- old_gen$fitness
+  
+  best <- c() ## best seen so far
+  best_i <- 0 ## iteration when it was seen
+  best_fit <- Inf ## fitness of best so far
+  
   i <- 0   # number of iterations
-  while(identical(AIC,rep(AIC[1],length(AIC)))==FALSE){
-    #print(old_gen)
->>>>>>> c54231a17bbecbeb94098f61f6f2428b65d056d7
+  while(i < max_iter) {
+    
     ##### select parents #####
-
-    parents <- propotional(old_gen, random = randomness)
-
+    
+    if (selection == "proportional"){
+      parents <- propotional(old_gen, random = randomness)
+    } else {
+      parents <- tournament(old_gen, k=K)
+    }
+    
     ##### crossover and mutation #####
-
-<<<<<<< HEAD
-    children <- unlist(lapply(parents, breed, ncol(X)),
-                       FALSE, FALSE)
-=======
-    children <- unlist(lapply(parents, breed, C),FALSE, FALSE)
->>>>>>> c54231a17bbecbeb94098f61f6f2428b65d056d7
-
-    ##### ranked new generation and calculate AIC #####
-
-    ranked_new <- ranked_models(children, X, y)
-
+    
+    children <- unique(unlist(lapply(parents, breed, C, n_splits, op),
+                              FALSE, FALSE))
+    
+    ##### ranked new generation and calculate fitness #####
+    
+    ranked_new <- ranked_models(children, X, y, fit_func)
+    
     ##### replace k worst old individuals with k new individuals #####
-
-<<<<<<< HEAD
-    next_gen <- generation_gap(ranked_new, old_gen, k)
-    old_gen <- next_gen
-=======
-    next_gen <- generation_gap(ranked_new, old_gen,G)
+    
+    next_gen <- generation_gap(old_gen, ranked_new, G)
+    
+    ## update our best so far if necessary
+    if (next_gen$fitness[1] < best_fit) {
+      best_fit <- next_gen$fitness[1]
+      best <- next_gen$Index[[1]]
+      best_i <- i + 1
+    }
     
     ##### let new genration reproudce next offspring ######
     old_gen <- next_gen
-    AIC <- old_gen$AIC
+    fitness <- old_gen$fitness
     i <- i + 1
->>>>>>> c54231a17bbecbeb94098f61f6f2428b65d056d7
   }
-  summary <- list(final_gen = old_gen$Index[[1]],AIC = AIC[[1]],num_iteration = i)
+  
+  summary <- list(survivor = best, fitness = best_fit,
+                  num_iteration = i, first_seen = best_i)
   return(summary)
 }
-
-

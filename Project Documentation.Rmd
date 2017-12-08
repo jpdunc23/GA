@@ -10,7 +10,28 @@ knitr::opts_chunk$set(echo = TRUE)
 ```
 
 ## How $\textit{select}$ Works
-(discuss our general approach here)
+
+### Modularity and Approach
+
+When designing our package, we first planned out the necessary components in a way that would not only be easy to divide up work, but would also provide modularity in our program. We first wrote a function that would randomly determine how to setup the first generation and which features should be included in each member of the generation. Once that was completed, we wrote a function that would calculate the fitness of a member inside a generation. After all of the member's had their fitness calculated, it would be ranked to determine the most fit members of the population. Next, we would pick the pairs of members that would become parents for the next generation. These members were picked proportional to their fitness if selection was chosen to be proportional. Otherwise selection was chosen to be tournament selection in which the generation is randomly partitioned $k$-ways and the best in each group becomes a parent. Once the parents had been chosen, the children needed to be created via cross over. We also included a mutation step as the reading mentioned in which we would randomly alter the expression of a feature. Once the children our selected, they are ranked and we replace the $n$ worst individuals with $n$ new individuals from the old generation. This is our implementation of the generation gap which is the final step in determining the new generation. Once this is complete, we pick the member in the generation with the best fitness and make that the overall best member. Then, we continue iterating till we reach out convergence criteria. In our case, we determined the convergence criteria to be determined by a number of iterations that the user can specify or is defaulted at 100 iterations. The code is broken modularized into these functions:
+
+\begin{enumerate}
+ \item initialize parents: sets up the intial generation
+ \item calculate fitness: calculates the fitness of a given feature set
+ \item ranked models: rank all the models based on their fitness value
+ \item breed: takes a generation and outputs its children
+  \begin{enumerate}
+  \item crossover: takes in a list of places to split and creates a set of children
+  \item mutate: mutates some features with a low probability
+  \end{enumerate}
+  \item tournament, proportional: two ways of selecting parents
+  \item generation gap: determines which parents will belong in the new generation and which members of the new generation will be kicked out
+  \item select: puts all the functions together while iterating till reaching convergence criteria
+\end{enumerate}
+
+### Testing
+
+In terms of testing, we first ensured that all functions were tested for proper inputs. This includes auxillary functions that aren't intended for public use. We did input sanitization for all functions to ensure that it would gracefully handle mal-formed error including non-integer/float inputs and NA inputs. We also had to write tests for inputs that didn't make sense in relation to the function. For example, if the number of crossover points chosen was greater than the length of the chromosome. Finally, we also ensured that all of our tests worked for inputs we expected it to work on. We also checked for the accuracy of our results in our test cases. When writing our code, we used a pair programming approach to limit defects in the code. We also would write a function and have someone else write tests for it to ensure we could catch as many cases as possible.   
 
 ## An Example
 
@@ -37,10 +58,11 @@ Ideally, our genetic algorithm will successfully select $real_{1} \sim real_{6}$
 The project resides in Kunal's repository (Git Username: kunaljaydesai, Repo name: GA).
 
 The specific tasks completed by each group member is listed below:
+
 \begin{enumerate}
- \Kunal
- \Fan
- Wrote ranked_model, generation_gap and wrote their respective tests. Modified and finalized calculated_fitness and wrote its respective tests. Wrote the \textit{An Example} section in this documentation.
- \James
- \Xin
+ \item[Kunal] Wrote the initialize parents function and calculate fitness function. Wrote tests for respective functions and created testing pipeline (directory and autotester). Created framework for package including roxygen2 documentation setup. Wrote Modularity and Approach and Testing section in this documentation.
+ \item[Fan]
+ Wrote ranked model, generation gap and wrote their respective tests. Modified and finalized calculated fitness and wrote its respective tests. Wrote the \textit{An Example} section in this documentation.
+ \item[James] *INSERT CONTRIBUTION HERE*
+ \item[Xin] *INSERT CONTRIBUTION HERE*
 \end{enumerate}

@@ -14,38 +14,38 @@
 
 
 calculate_fitness <- function(index, X, y, fit_func, family = gaussian) {
-  
+
   index.str <- paste0(deparse(index), collapse = "")
   if (index.str %in% names(dict.fitness)) {
     return(get(index.str, envir = dict.fitness))
   } else{
-    
+
     X <- X[,index]
     X <- as.data.frame(X)
     y <- as.vector(y)
-    
+
     if (!is.vector(index)) {
       stop("index is not a vector")
     }
-    
+
     if (!is.matrix(X) && !is.data.frame(X) ) {
       stop("X is not a matrix or data frame")
     }
-    
+
     if (!is.vector(y)) {
       stop("Y is not a vector")
     }
-    
+
     if (!is.function(fit_func)) {
       stop("fit_func is not a function")
     }
-    
+
     if (!(nrow(X) == length(y))) {
       stop("Number of rows for X and y aren't equal")
     }
-    
+
     X$y <- y
-    
+
     model <- glm(y ~ ., data = X, family = family)
     fitness <- tryCatch({
       fit_func(model)
@@ -58,7 +58,7 @@ calculate_fitness <- function(index, X, y, fit_func, family = gaussian) {
     assign(index.str, fitness, envir = dict.fitness)
     return (fitness)
   }
-  
+
 }
 
 ###########################################################################################
@@ -79,13 +79,17 @@ calculate_fitness <- function(index, X, y, fit_func, family = gaussian) {
 #' ranked_models(index, X, y)
 
 
-ranked_models <- function(index, X, y, fit_func=AIC, family = gaussian) {
-  
-  fitness_ini <- lapply(index, calculate_fitness, X, y, fit_func, family)
+ranked_models <- function(index, X, y, fit_func=AIC, family = gaussian, cluster=NA) {
+
+  if (is.na(cluster)) {
+    fitness_ini <- lapply(index, calculate_fitness, X, y, fit_func, family)
+  } else {
+    fitness_ini <- parLapply(cluster, index, calculate_fitness, X, y, fit_func, family)
+  }
   model_fitness <- data.frame(sapply(list(index), `[`))
   colnames(model_fitness) <- c('Index')
   model_fitness$fitness <- unlist(fitness_ini)
   model_fitness <- arrange(model_fitness,fitness)
-  
+
   return(model_fitness)
 }

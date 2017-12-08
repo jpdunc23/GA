@@ -28,7 +28,7 @@
 #' ## list of numeric vectors representing the next generation
 #' next_gen <- unlist(lapply(parent_gen, breed, C), FALSE, FALSE)
 
-breed <- function(parents, C, n = 1, op = NULL, ...) {
+breed <- function(parents, C, n = 1, op = NULL, cluster=NA...) {
   if (n >= C - 1) {
     msg <- paste0("Number of crossover points is greater than ",
                   "chromosome length. Using default number of ",
@@ -36,38 +36,38 @@ breed <- function(parents, C, n = 1, op = NULL, ...) {
     warning(msg)
     n = 1
   }
-  
+
   if (!is.null(op)) {
     ## run user-provided genetic operation
     return(op(parents, C, ...))
   } else {
     ## default breeding with random crossover point
     ## and mutation chance of 1% at each gene
-    
+
     parent1 <- parents[[1]]
     parent2 <- parents[[2]]
-    
+
     ## random crossover points
     splits <- sort(sample(1:(C - 1), n))
     embryo1 <- crossover(splits, parent1, parent2)
     embryo2 <- crossover(splits, parent2, parent1)
-    
+
     ## each gene/parameter has a 1% chance to be flipped on/off
     mutate1 <- which(runif(C) <= 0.01)
     mutate2 <- which(runif(C) <= 0.01)
-    
+
     ## combine genes of embryo that are not mutated
     ## with those that are activated by the mutation
     child1 <- sort(c(setdiff(embryo1, mutate1),
                      setdiff(mutate1, embryo1)))
     child2 <- sort(c(setdiff(embryo2, mutate2),
                      setdiff(mutate2, embryo2)))
-    
+
     if (length(child1) == length(child2) &&
         all(child1 == child2)) return(list(child1))
     else return(list(child1, child2))
   }
-  
+
 }
 
 crossover <- function(splits, parent1, parent2) {

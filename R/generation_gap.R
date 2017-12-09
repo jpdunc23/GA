@@ -58,6 +58,6 @@ generation_gap <- function(old_gen, children, G = 1) {
     }
   }
   
-  next_gen <- next_gen %>% arrange(fitness)
+  next_gen <- dplyr::arrange(next_gen, fitness)
   return(next_gen)
 }

@@ -81,15 +81,17 @@ calculate_fitness <- function(index, X, y, fit_func, family = gaussian) {
 
 ranked_models <- function(index, X, y, fit_func=AIC, family = gaussian, cluster=NA) {
 
-  if (is.na(cluster)) {
+  if (all(is.na(cluster))) {
     fitness_ini <- lapply(index, calculate_fitness, X, y, fit_func, family)
   } else {
-    fitness_ini <- parLapply(cluster, index, calculate_fitness, X, y, fit_func, family)
+    fitness_ini <- parallel::parLapply(cluster, index,
+                                       calculate_fitness, X, y,
+                                       fit_func, family)
   }
   model_fitness <- data.frame(sapply(list(index), `[`))
   colnames(model_fitness) <- c('Index')
   model_fitness$fitness <- unlist(fitness_ini)
-  model_fitness <- arrange(model_fitness,fitness)
+  model_fitness <- dplyr::arrange(model_fitness,fitness)
 
   return(model_fitness)
 }

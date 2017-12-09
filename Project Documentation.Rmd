@@ -1,7 +1,7 @@
 ---
 title: 'STAT 243 Final Project: Genetic Algorithm  Documentation'
 author: "Kunal Desai, Fan Dong, James Duncan, Xin Shi"
-date: "December 6, 2017"
+date: "December 14, 2017"
 output: pdf_document
 ---
 
@@ -13,21 +13,30 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ### Modularity and Approach
 
-When designing our package, we first planned out the necessary components in a way that would not only be easy to divide up work, but would also provide modularity in our program. We first wrote a function that would randomly determine how to setup the first generation and which features should be included in each member of the generation. Once that was completed, we wrote a function that would calculate the fitness of a member inside a generation. After all of the member's had their fitness calculated, it would be ranked to determine the most fit members of the population. Next, we would pick the pairs of members that would become parents for the next generation. These members were picked proportional to their fitness if selection was chosen to be proportional. Otherwise selection was chosen to be tournament selection in which the generation is randomly partitioned $k$-ways and the best in each group becomes a parent. Once the parents had been chosen, the children needed to be created via cross over. We also included a mutation step as the reading mentioned in which we would randomly alter the expression of a feature. Once the children our selected, they are ranked and we replace the $n$ worst individuals with $n$ new individuals from the old generation. This is our implementation of the generation gap which is the final step in determining the new generation. Once this is complete, we pick the member in the generation with the best fitness and make that the overall best member. Then, we continue iterating till we reach out convergence criteria. In our case, we determined the convergence criteria to be determined by a number of iterations that the user can specify or is defaulted at 100 iterations. The code is broken modularized into these functions:
+$\includegraphics{Flowchart.png}$
 
-\begin{enumerate}
- \item initialize parents: sets up the intial generation
- \item calculate fitness: calculates the fitness of a given feature set
- \item ranked models: rank all the models based on their fitness value
- \item breed: takes a generation and outputs its children
-  \begin{enumerate}
-  \item crossover: takes in a list of places to split and creates a set of children
-  \item mutate: mutates some features with a low probability
-  \end{enumerate}
-  \item tournament, proportional: two ways of selecting parents
-  \item generation gap: determines which parents will belong in the new generation and which members of the new generation will be kicked out
-  \item select: puts all the functions together while iterating till reaching convergence criteria
-\end{enumerate}
+The Genetic Algorithm package is designed modularly, each step with auxiliary functions accomplishing discrete tasks. 
+
+As the flowchart above shows, the algorithm consists of six steps. First, through *initialize_parents*, we setup the first generation of P models by randomly selecting features for each member of the generation. Once that was completed, we calculate the fitness of each model inside the generation and rank all the models by their fitness (using *calculate_fitness* and *ranked_models*). 
+
+Next, we enter the loop and start the first selection process of picking the pairs of parents for the next generation. There are three selection mechanism: proportional, rank or tournament. The first two methods use *proportional.* When calling proportional selection (set random=TRUE), one parent is picked proportional to its fitness and the other picked completely randomly; when calling rank selection (set random=FALSE), both parents are picked proportional to their fitness. Otherwise selection was chosen to be tournament selection (use *tournament*) in which everytime we randomly select $k$ members from the generation and the best in each round becomes a parent. Once the parents had been chosen, the children needed to be created (use *breed*) via cross over. Then, to increase diversity, there is a 1% possibility that the expression of a feature will be randomly altered. Once the children are selected, like their parents, they are ranked by fitness (*ranked_models*). Next, using *generation_gap*, we replace the $n$ worst individuals with $n$ new individuals from the old generation. This is the final step in determining the new generation. Once this is complete, we pick the member in the generation with the best fitness and make that the overall best member. 
+
+We repeat this process until the convergence criteria is met. In our case, the criteria is the maximum number of iterations, which can either be specified by the user or set at a default of 100. 
+
+To summarize, when calling the primary function *select*, the following is happening under the hood:
+
+*select*: put all the functions together while iterating till reaching convergence criteria
+
+
+* *initialize_parents*: set up the intial generation
+* *ranked_models*: rank all the models based on their fitness value
+    + *calculate_fitness*: calculate the fitness (AIC by default) of a given feature set
+* *breed*: take a generation and output its children
+    + *crossover*: take in a list of places to split (number of splits can be specified by the user or 2 by default) and create a set of children
+    + *mutate*: mutate some features with a low probability (1% by default)
+* *tournament*, *proportional* (random = TRUE / FALSE): select parents out of the current generation
+* *generation_gap*: determine which parents will belong in the new generation and which members of the new generation will be kicked out
+
 
 ### Testing
 
@@ -59,10 +68,20 @@ The project resides in Kunal's repository (Git Username: kunaljaydesai, Repo nam
 
 The specific tasks completed by each group member is listed below:
 
-\begin{enumerate}
- \item[Kunal] Wrote the initialize parents function and calculate fitness function. Wrote tests for respective functions and created testing pipeline (directory and autotester). Created framework for package including roxygen2 documentation setup. Wrote Modularity and Approach and Testing section in this documentation.
- \item[Fan]
- Wrote ranked model, generation gap and wrote their respective tests. Modified and finalized calculated fitness and wrote its respective tests. Wrote the \textit{An Example} section in this documentation.
- \item[James] *INSERT CONTRIBUTION HERE*
- \item[Xin] *INSERT CONTRIBUTION HERE*
-\end{enumerate}
+
+* Kunal 
+
+  Wrote the initialize parents function and calculate fitness function. Wrote tests for respective functions and created testing pipeline (directory and autotester). Created framework for package including roxygen2 documentation setup. Wrote Modularity and Approach and Testing section in this documentation.
+
+* Fan
+
+ Wrote ranked_models, tournament and their respective tests. Modified and finalized calculated fitness. Finalized roxygen2 documentation for all functions. Modified and finalized \textit{Modularity and Approach} section in this documentation. Wrote the \textit{An Example} section in this documentation with Xin.
+
+* James
+
+  *INSERT CONTRIBUTION HERE*
+
+* Xin 
+
+  *INSERT CONTRIBUTION HERE*
+

@@ -1,3 +1,6 @@
+library(dplyr)
+library(assertive)
+library(parallel)
 ###########################################################################################
 # Function: select
 #
@@ -34,9 +37,6 @@ select <- function(X, y, C = ncol(X), family = gaussian,
                    randomness = TRUE, P = 2 * ncol(X),
                    G = 1/P, n_splits = 2, op = NULL,
                    fit_func = AIC, max_iter = 100, parallel=TRUE, ...) {
-  library(dplyr)
-  library(assertive)
-  library(parallel)
 
   feature_count <- ncol(X)
   dict.fitness <<- new.env()

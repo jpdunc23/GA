@@ -8,7 +8,7 @@ y <- X[ ,1:6] %*% beta
 colnames(X) <- c(paste("real", 1:6, sep = ""),
                  paste("noi", 1:34, sep = ""))
 # system.time(
-#      o1 <- select(X, y, nsplits = 3, max_iter = 200)
+#      o1 <- select(X, y, nsplits = 3, max_iter = 10)
 # )
 # o1
 # system.time(

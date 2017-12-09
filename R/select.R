@@ -106,6 +106,6 @@ select <- function(X, y, C = ncol(X), family = gaussian,
 
   summary <- list(survivor = best, fitness = best_fit,
                   num_iteration = i, first_seen = best_i)
-
+  detach("package:dplyr", unload=TRUE)
   return(summary)
 }

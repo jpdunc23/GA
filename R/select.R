@@ -34,7 +34,6 @@ select <- function(X, y, C = ncol(X), family = gaussian,
                    randomness = TRUE, P = 2 * ncol(X),
                    G = 1/P, n_splits = 2, op = NULL,
                    fit_func = AIC, max_iter = 100, parallel=TRUE, ...) {
-  library(plyr)
   library(dplyr)
   library(assertive)
   library(parallel)
@@ -101,7 +100,10 @@ select <- function(X, y, C = ncol(X), family = gaussian,
     fitness <- old_gen$fitness
     i <- i + 1
   }
-  stopCluster(cluster)
+  if (!is.na(cluster)) {
+    stopCluster(cluster)
+  }
+
   summary <- list(survivor = best, fitness = best_fit,
                   num_iteration = i, first_seen = best_i)
 

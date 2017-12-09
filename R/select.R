@@ -1,6 +1,3 @@
-library(dplyr)
-library(assertive)
-library(parallel)
 ###########################################################################################
 # Function: select
 #
@@ -43,14 +40,14 @@ select <- function(X, y, C = ncol(X), family = gaussian,
   initial <- initialize_parents(ncol(X), P)
 
   if (parallel) {
-    cores <- detectCores()
-    cluster <- makeCluster(cores)
-    clusterExport(cluster, "crossover")
-    clusterExport(cl = cluster, c("dict.fitness"), envir = dict.fitness)
+    cores <- parallel::detectCores()
+    cluster <- parallel::makeCluster(cores)
+    parallel::clusterExport(cluster, "crossover")
+    parallel::clusterExport(cl = cluster, c("dict.fitness"),
+                            envir = dict.fitness)
   } else {
     cluster = NA
   }
-
 
   old_gen <- ranked_models(initial$index, X, y, fit_func, cluster=cluster)
   fitness <- old_gen$fitness
@@ -71,18 +68,23 @@ select <- function(X, y, C = ncol(X), family = gaussian,
     }
 
     ##### crossover and mutation #####
-    if (parallel && !is.na(cluster)) {
-      children <- unique(unlist(parLapply(cluster, parents, breed, C, n_splits, op),
-                                FALSE, FALSE))
+    if (parallel && all(!is.na(cluster))) {
+      children <- unique(unlist(
+        parallel::parLapply(cluster, parents,
+                            breed, C, n_splits, op),
+        FALSE, FALSE
+      ))
     } else {
-      children <- unique(unlist(lapply(parents, breed, C, n_splits, op),
+      children <- unique(unlist(lapply(parents, breed,
+                                       C, n_splits, op),
                                 FALSE, FALSE))
     }
 
 
     ##### ranked new generation and calculate fitness #####
 
-    ranked_new <- ranked_models(children, X, y, fit_func, cluster=cluster)
+    ranked_new <- ranked_models(children, X, y, fit_func,
+                                cluster=cluster)
 
     ##### replace k worst old individuals with k new individuals #####
 
@@ -100,12 +102,12 @@ select <- function(X, y, C = ncol(X), family = gaussian,
     fitness <- old_gen$fitness
     i <- i + 1
   }
-  if (!is.na(cluster)) {
-    stopCluster(cluster)
+  if (all(!is.na(cluster))) {
+    parallel::stopCluster(cluster)
   }
 
   summary <- list(survivor = best, fitness = best_fit,
                   num_iteration = i, first_seen = best_i)
-  detach("package:dplyr", unload=TRUE)
+  ##detach("package:dplyr", unload=TRUE)
   return(summary)
 }

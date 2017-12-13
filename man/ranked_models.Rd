@@ -4,7 +4,8 @@
 \alias{ranked_models}
 \title{Fit the models and rank them by their fitness.}
 \usage{
-ranked_models(index, X, y, fit_func = AIC, family = gaussian)
+ranked_models(index, X, y, fit_func = AIC, family = gaussian,
+  cluster = NA)
 }
 \arguments{
 \item{index}{A list of indices of selected variables.}

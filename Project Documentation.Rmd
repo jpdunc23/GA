@@ -44,24 +44,58 @@ In terms of testing, we first ensured that all functions were tested for proper 
 
 ## An Example
 
-To test the algorithm, we randomly generate a dataset of 40 predictors and 500 observations, in which 6 are real predictors (named $real_{1} \sim real_{6}$) and the rest are pure noise variables($noi_{1} \sim noi_{34}$). The response variable, $y$, is thus given by the equation (coefficients are picked randomly): 
+To test the algorithm, we randomly generate a dataset of 10 predictors and 20 observations, in which 4 are real predictors (named $real_{1} \sim real_{6}$) and the rest are pure noise variables($noi_{1} \sim noi_{34}$). The response variable, $y$, is thus given by the equation (coefficients are picked randomly): 
 
-$y= \beta_{0}+\beta_{1} \times real_{1} + \beta_{2} \times real_{2} + \beta_{3} \times real_{3} + \beta_{4} \times real_{4} + \beta_{5} \times real_{5} + \beta_{6} \times real_{6}$
+$y= \beta_{0}+ \beta_{1}x_{1} + \beta_{2}x_{2} + \beta_{3}x_{3} + \beta_{4}x_{4}$
 
 Code for data simulation:
+
 ```{r }
+library(GA)
+x <- matrix(rnorm(10*20),ncol=10) # generate a data with 10 features
+beta <- c(1,3,5,7) 
+y <- x[,1:4] %*% beta # the true feature is first four features
+colnames(x) <- c(paste("real", 1:4, sep = ""),
+                 paste("noi", 1:6, sep = ""))
+select(x,y) # By GA algorithm
+permutations <- initialize_parents(10,1024) # genearte all possible models
+result <- ranked_models(permutations$index,x,y)
+result[which(result$fitness == min(result$fitness)),] # find the best model with highest fitness
+```
+
+Ideally, our genetic algorithm will successfully select $x_{1} \sim x_{4}$ out of the 10 predictors.
+Then we make a brief
+```{r,fig.height = 6}
+par(mfrow = c(2,2))
+##### generate data with 40 features, 500 observations ######
 n <- 500
 c <- 40
 X <- matrix(rnorm(n * c), nrow = n)
 beta <- c(88, 0.1, 123, 4563, 1.23, 20)
-y <- X[ ,1:6] %*% beta
+y <- X[ ,1:6] %*% beta  # true model is first 6 features
 colnames(X) <- c(paste("real", 1:6, sep = ""),
-                     paste("noi", 1:34, sep = ""))
-
+                 paste("noi", 1:34, sep = ""))
+select(X,y)
+initial <- initialize_parents(40,80) # intialize to generate index
+old_gen <- ranked_models(initial$index,X,y) # lm each model
+for( i in 1:4){ 
+  ### choose parents from old gen
+  parents <- propotional(old_gen, random = T)
+  ### crossover and mutation
+  children <- unique(unlist(lapply(parents, breed,C = 40),FALSE, FALSE))
+  ### lm children
+  ranked_new <- ranked_models(children, X, y)
+  ### generation gap
+  next_gen <- generation_gap(old_gen, ranked_new)
+  plot(old_gen$fitness,main = paste("generation",i),ylab = "AIC", xlab =paste("generation",i))
+  old_gen <- next_gen
+}
 ```
+\
+From the graph above, we can see that in each iteration, generation is improved and more fitted models takes a huger propotion of generation.
 
-Ideally, our genetic algorithm will successfully select $real_{1} \sim real_{6}$ out of the 40 predictors. 
 
+\newpage
 ## How the Team Works
 
 The project resides in Kunal's repository (Git Username: kunaljaydesai, Repo name: GA).
@@ -83,5 +117,5 @@ The specific tasks completed by each group member is listed below:
 
 * Xin 
 
-  *INSERT CONTRIBUTION HERE*
+ Wrote propotional function and select function. Test and improve the main function to converge better and faster with James. Wrote \textit{Example} section in this documentation with Fan.
 

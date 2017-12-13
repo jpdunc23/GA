@@ -2,15 +2,11 @@
 % Please edit documentation in R/select.R
 \name{select}
 \alias{select}
-\title{Ranked each model by its fitness,
-Choose parents from generations propotional to their fitness
-Do crossover and mutation
-Replace a proportion G of the worst old individuals by best
-  new individuals}
+\title{Genetic Algorithm}
 \usage{
 select(X, y, C = ncol(X), family = gaussian, selection = "tournament",
   K = 2, randomness = TRUE, P = 2 * ncol(X), G = 1/P, n_splits = 2,
-  op = NULL, fit_func = AIC, max_iter = 100, ...)
+  op = NULL, fit_func = AIC, max_iter = 100, parallel = TRUE, ...)
 }
 \arguments{
 \item{C}{The length of chromosomes, i.e. the maximum number of
@@ -46,11 +42,7 @@ to carry out the breeding.}
 The best individual seen over all iterations.
 }
 \description{
-Ranked each model by its fitness,
-Choose parents from generations propotional to their fitness
-Do crossover and mutation
-Replace a proportion G of the worst old individuals by best
-  new individuals
+Ranked each model by its fitness, Choose parents from generations propotional to their fitness. Then do crossover and mutation, Replace a proportion G of the worst old individuals by best new individuals
 }
 \examples{
 x <- mtcars[-1]

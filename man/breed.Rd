@@ -5,7 +5,7 @@
 \title{Breeding to create a new combination of predictors to use in
   the regression, via genetic crossover and mutation by default.}
 \usage{
-breed(parents, C, n = 1, op = NULL, ...)
+breed(parents, C, n = 1, op = NULL, cluster = NA...)
 }
 \arguments{
 \item{parents}{A tuple (2-list) of ordered numeric vectors,

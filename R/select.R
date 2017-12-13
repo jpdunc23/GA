@@ -1,16 +1,11 @@
 ###########################################################################################
 # Function: select
-#
-#' Ranked each model by its fitness,
-#' Choose parents from generations propotional to their fitness
-#' Do crossover and mutation
-#' Replace a proportion G of the worst old individuals by best
-#'   new individuals
+#' Genetic Algorithm
+#' @description Ranked each model by its fitness, Choose parents from generations propotional to their fitness. Then do crossover and mutation, Replace a proportion G of the worst old individuals by best new individuals
 #' @param X: dataframe containing vairables in the model
 #' @param y: vector targeted variable
-#' @param C The length of chromosomes, i.e. the maximum number of
-#'   possible predictors.
-#' @param family: a description of the error distribution and link function to be used in gm.
+#' @param C: The length of chromosomes, i.e. the maximum number of possible predictors.
+#' @param family: a description of the error distribution and link function to be used in glm.
 #' @param selection: selection mechanism. Can be either "proportional" or "tournament".
 #' @param K: size of each round of selection when using tournament selection.
 #'   Must be an integer smaller than generation size.

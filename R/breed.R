@@ -31,7 +31,7 @@
 #' next_gen <- unlist(lapply(parent_gen, breed, C), FALSE, FALSE)
 
 breed <- function(parents, C, n = 1, op = NULL, cluster=NA...) {
-  if (n >= C - 1) {
+  if (n >= C) {
     msg <- paste0("Number of crossover points is greater than ",
                   "chromosome length. Using default number of ",
                   "crossover points (1) instead.")

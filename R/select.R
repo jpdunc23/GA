@@ -17,11 +17,22 @@
 #'   to carry out the breeding.
 #' @param fit_func: Function for fitness measurement. Default is AIC.
 #' @param max_iter: how many iterations to run before stopping
-#' @return The best individual seen over all iterations.
+#' @return The best individual seen over all iterations. The best individual is characterized as the feature set that best explains the data.
+#' @details First, the algorithm setups up the first generation of P models by randomly selecting features for each member of the generation. Once that was completed, the algorithm calculates the fitness of each model inside the generation and rank all the models by their fitness. The algorithm repeats this step till we reach the max number of iterations. Once this is complete, the feature set corresponding to the lowest AIC is returned.
 #' @examples
 #' x <- mtcars[-1]
 #' y <- unlist(mtcars[1])
 #' select(x, y, selection = "tournament", K = 5, randomness=TRUE, G=0.8)
+#' set.seed(1)
+#' n <- 500
+#' C <- 40
+#' X <- matrix(rnorm(n * C), nrow = n)
+#' beta <- c(88, 0.1, 123, 4563, 1.23, 20)
+#' y <- X[ ,1:6] %*% beta
+#' colnames(X) <- c(paste("real", 1:6, sep = ""),
+#'                  paste("noi", 1:34, sep = ""))
+#' o1 <- select(X, y, nsplits = 3, max_iter = 10)
+#' o2 <- select(X, y, selection = "proportional", n_splits = 3)
 #' @export
 
 select <- function(X, y, C = ncol(X), family = gaussian,

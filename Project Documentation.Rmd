@@ -105,7 +105,7 @@ The specific tasks completed by each group member is listed below:
 
 * Kunal 
 
-  Wrote the initialize parents function and calculate fitness function. Wrote tests for respective functions and created testing pipeline (directory and autotester). Created framework for package including roxygen2 documentation setup. Wrote Modularity and Approach and Testing section in this documentation.
+  Wrote the initialize parents function and calculate fitness function. Wrote tests for respective functions and created testing pipeline (directory and autotester). Created framework for package including roxygen2 documentation setup. Wrote \textit{Modularity and Approach} and \textit{Testing} section in this documentation.
 
 * Fan
 

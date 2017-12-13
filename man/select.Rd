@@ -9,14 +9,13 @@ select(X, y, C = ncol(X), family = gaussian, selection = "tournament",
   op = NULL, fit_func = AIC, max_iter = 100, parallel = TRUE, ...)
 }
 \arguments{
-\item{C}{The length of chromosomes, i.e. the maximum number of
-possible predictors.}
-
 \item{X:}{dataframe containing vairables in the model}
 
 \item{y:}{vector targeted variable}
 
-\item{family:}{a description of the error distribution and link function to be used in gm.}
+\item{C:}{The length of chromosomes, i.e. the maximum number of possible predictors.}
+
+\item{family:}{a description of the error distribution and link function to be used in glm.}
 
 \item{selection:}{selection mechanism. Can be either "proportional" or "tournament".}
 
@@ -39,13 +38,26 @@ to carry out the breeding.}
 \item{max_iter:}{how many iterations to run before stopping}
 }
 \value{
-The best individual seen over all iterations.
+The best individual seen over all iterations. The best individual is characterized as the feature set that best explains the data.
 }
 \description{
 Ranked each model by its fitness, Choose parents from generations propotional to their fitness. Then do crossover and mutation, Replace a proportion G of the worst old individuals by best new individuals
+}
+\details{
+First, the algorithm setups up the first generation of P models by randomly selecting features for each member of the generation. Once that was completed, the algorithm calculates the fitness of each model inside the generation and rank all the models by their fitness. The algorithm repeats this step till we reach the max number of iterations. Once this is complete, the feature set corresponding to the lowest AIC is returned.
 }
 \examples{
 x <- mtcars[-1]
 y <- unlist(mtcars[1])
 select(x, y, selection = "tournament", K = 5, randomness=TRUE, G=0.8)
+set.seed(1)
+n <- 500
+C <- 40
+X <- matrix(rnorm(n * C), nrow = n)
+beta <- c(88, 0.1, 123, 4563, 1.23, 20)
+y <- X[ ,1:6] \%*\% beta
+colnames(X) <- c(paste("real", 1:6, sep = ""),
+                 paste("noi", 1:34, sep = ""))
+o1 <- select(X, y, nsplits = 3, max_iter = 10)
+o2 <- select(X, y, selection = "proportional", n_splits = 3)
 }

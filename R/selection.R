@@ -1,9 +1,10 @@
 ###########################################################################################
 # Function: tournament
 #
-#' Choose parents using tournament selection.
-#' Each time, randomly pick k models from the previous generation and
-#' the best-performed model will be selected as the parent.
+#' Tournament Selection
+#'
+#' @description Choose parents using tournament selection. Each time, randomly pick k models from the
+#' previous generation and the best-performed model will be selected as the parent.
 #' Repeat this process until all slots for parents are filled.
 #' @param models dataframe with models (specified by the index of selected variables)
 #' and their respective fitness value. Object returned by ranked_models().

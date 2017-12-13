@@ -20,10 +20,6 @@ calculate_fitness <- function(index, X, y, fit_func, family = gaussian) {
     return(get(index.str, envir = dict.fitness))
   } else{
 
-    X <- X[,index]
-    X <- as.data.frame(X)
-    y <- as.vector(y)
-
     if (!is.vector(index)) {
       stop("index is not a vector")
     }
@@ -43,6 +39,11 @@ calculate_fitness <- function(index, X, y, fit_func, family = gaussian) {
     if (!(nrow(X) == length(y))) {
       stop("Number of rows for X and y aren't equal")
     }
+
+
+    X <- X[,index]
+    X <- as.data.frame(X)
+    y <- as.vector(y)
 
     X$y <- y
 
@@ -81,6 +82,8 @@ calculate_fitness <- function(index, X, y, fit_func, family = gaussian) {
 
 ranked_models <- function(index, X, y, fit_func=AIC, family = gaussian, cluster=NA) {
 
+  # Determine whether or not to use parallelization
+  # Apply calculate_fitness to the list of models
   if (all(is.na(cluster))) {
     fitness_ini <- lapply(index, calculate_fitness, X, y, fit_func, family)
   } else {
@@ -88,10 +91,13 @@ ranked_models <- function(index, X, y, fit_func=AIC, family = gaussian, cluster=
                                        calculate_fitness, X, y,
                                        fit_func, family)
   }
+  # Turn resulting list to data frame
   model_fitness <- data.frame(sapply(list(index), `[`))
   colnames(model_fitness) <- c('Index')
   model_fitness$fitness <- unlist(fitness_ini)
+  # Sort by fitness, in ascending order
   model_fitness <- dplyr::arrange(model_fitness,fitness)
 
   return(model_fitness)
 }
+

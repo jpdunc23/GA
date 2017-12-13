@@ -1,7 +1,9 @@
 ###########################################################################################
 # Function: breed
 #
-#' Breeding to create a new combination of predictors to use in
+#' Breed the next generation
+#'
+#' @description Breeding to create a new combination of predictors to use in
 #'   the regression, via genetic crossover and mutation by default.
 #'
 #' @param parents A tuple (2-list) of ordered numeric vectors,

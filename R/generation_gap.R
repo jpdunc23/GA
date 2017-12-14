@@ -12,6 +12,12 @@
 #'   (most fit first). A data frame.
 
 generation_gap <- function(old_gen, children, G = 1) {
+  if (G <= 0 || G > 1) {
+    msg <- paste0("The replacement proportion G is invalid. ",
+                  "Using default, G = 1.")
+    warning(msg)
+    G = 1
+  }
   
   n_old <- nrow(old_gen)
   ## tournament selection can result

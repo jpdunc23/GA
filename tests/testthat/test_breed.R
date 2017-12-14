@@ -1,11 +1,9 @@
 context("breed and crossover tests")
 
 ## randomized test input
-C <- sample(1:20, 1)
-n1 <- sample(1:C, 1)
-n2 <- sample(1:C, 1)
-parent1 <- sort(sample(1:C, n1))
-parent2 <- sort(sample(1:C, n2))
+C <- 17
+parent1 <- c(1, 4, 6, 13)
+parent2 <- c(2, 4, 9, 17)
 parents <- list(parent1, parent2)
 
 test_that("n >= C results in warning", {

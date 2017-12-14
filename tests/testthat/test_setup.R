@@ -1,4 +1,5 @@
-library(testthat)
+context("initialize_parents tests")
+
 test_that("Input is sanitized", {
   expect_error(initialize_parents("a"))
   expect_error(initialize_parents(NA))

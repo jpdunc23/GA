@@ -1,5 +1,4 @@
-library(testthat)
-require(library)
+context("ranked_models tests")
 
 X <- mtcars[-1]
 y <- unlist(mtcars[1])

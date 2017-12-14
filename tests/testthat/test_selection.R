@@ -1,6 +1,4 @@
-# Test for tournament and proportional
-
-library(testthat)
+context("Tests for tournament and proportional")
 
 X <- mtcars[-1]
 y <- unlist(mtcars[1])

@@ -1,5 +1,5 @@
-library(testthat)
-library(assertive)
+context("calculation_fitness tests")
+
 dict.fitness <<- new.env()
 test_that("Input is sanitized", {
   expect_error(calculate_fitness("a", "y"))
